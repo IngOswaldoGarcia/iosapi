@@ -1,16 +1,15 @@
 from django.http import HttpResponse
 from rest_framework import permissions, viewsets, status
-from rest_framework.views import APIView, Response
+from rest_framework.views import Response
 from posts.models import Post
 
 from .serializers import PostsSerializer
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 class PostsViewSet(viewsets.ModelViewSet):
     """
         API endpoint that allows posts to be viewed or edited.
     """
-    queryset = Post.objects.all().order_by("title")
+    queryset = Post.objects.all().order_by("date")
     serializer_class = PostsSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -25,11 +24,14 @@ def return_response(content: list, success: bool, status: str):
 
 @api_view(['POST'])
 def create_post(request):
-    post = PostsSerializer(data=request.data)
-    if post.is_valid():
-        post.save()
-        return Response(return_response(post.data, True, status.HTTP_201_CREATED))
-    return Response(return_response(post.errors, False, status.HTTP_400_BAD_REQUEST))
+    try:
+        post = PostsSerializer(data=request.data)
+        if post.is_valid():
+            post.save()
+            return Response(return_response(post.data, True, status.HTTP_201_CREATED))
+        return Response(return_response(post.errors, False, status.HTTP_400_BAD_REQUEST))
+    except Exception as error:
+        return Response(return_response(error, False, status.HTTP_404_NOT_FOUND))
     
 
 @api_view(['PATCH'])
@@ -64,7 +66,6 @@ def delete_post(request):
         post.delete()
         return Response(return_response({}, True, status.HTTP_204_NO_CONTENT))
     except Exception as error:
-        print("delete", error)
         return Response(return_response(error, False, status.HTTP_404_NOT_FOUND))
 
 
